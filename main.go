@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/webview/webview"
@@ -147,7 +146,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
             overflow: hidden;
         }
         
-        /* Custom Title Bar */
         .title-bar {
             height: 48px;
             background: rgba(255,255,255,0.95);
@@ -349,7 +347,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
     </style>
 </head>
 <body>
-    <!-- Title Bar -->
     <div class="title-bar">
         <div class="title-bar-left">
             <span class="title-bar-icon">⚡</span>
@@ -368,10 +365,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
         </div>
     </div>
     
-    <!-- Main Content -->
     <div class="main-content">
         <div class="max-w-3xl mx-auto">
-            <!-- Header -->
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-slate-900">Tasks</h1>
@@ -390,7 +385,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
                 </div>
             </div>
             
-            <!-- Add Task -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-4">
                 <div class="flex flex-col sm:flex-row gap-3">
                     <input type="text" id="taskTitle" placeholder="What needs to be done?" 
@@ -410,7 +404,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
                 </div>
             </div>
             
-            <!-- Task List -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4" id="taskList">
                 <div class="empty-state">
                     <span class="icon">✨</span>
@@ -419,7 +412,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
                 </div>
             </div>
             
-            <!-- Footer -->
             <div class="flex items-center justify-between mt-4 text-sm text-slate-400">
                 <span>⚡ v1.0.0</span>
                 <div class="flex gap-2">
@@ -437,7 +429,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
         </div>
     </div>
     
-    <!-- Modal -->
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box">
             <span class="modal-icon" id="modalIcon">⚠️</span>
@@ -450,83 +441,43 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
         </div>
     </div>
     
-    <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
     
     <script>
-        // ============ WINDOW CONTROLS ============
-        function minimizeWindow() {
-            if (window.webview) window.webview.minimize();
-        }
-        
-        function maximizeWindow() {
-            if (window.webview) window.webview.maximize();
-        }
-        
+        function minimizeWindow() { if (window.webview) window.webview.Minimize(); }
+        function maximizeWindow() { if (window.webview) window.webview.Maximize(); }
         function closeWindow() {
-            showModal(
-                '👋',
-                'Exit Application',
-                'Are you sure you want to close the application?',
-                'Yes, Close',
-                'danger',
-                function() {
-                    if (window.webview) window.webview.terminate();
-                }
+            showModal('👋', 'Exit Application', 'Are you sure you want to close?', 'Yes, Close', 'danger',
+                function() { if (window.webview) window.webview.Terminate(); }
             );
         }
         
-        // ============ MODAL SYSTEM ============
         let modalCallback = null;
-        
         function showModal(icon, title, text, confirmText, type, callback) {
             document.getElementById('modalIcon').textContent = icon || '⚠️';
             document.getElementById('modalTitle').textContent = title || 'Are you sure?';
             document.getElementById('modalText').textContent = text || 'This action cannot be undone.';
-            
             const confirmBtn = document.getElementById('modalConfirmBtn');
             confirmBtn.textContent = confirmText || 'Confirm';
             confirmBtn.className = 'btn px-6 py-2 text-white rounded-lg font-medium text-sm';
-            
-            if (type === 'danger') {
-                confirmBtn.classList.add('bg-red-500', 'hover:bg-red-600');
-            } else if (type === 'success') {
-                confirmBtn.classList.add('bg-green-500', 'hover:bg-green-600');
-            } else {
-                confirmBtn.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
-            }
-            
+            if (type === 'danger') confirmBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            else if (type === 'success') confirmBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+            else confirmBtn.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
             modalCallback = callback;
             document.getElementById('modalOverlay').classList.add('active');
         }
+        function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); modalCallback = null; }
+        function confirmModal() { if (modalCallback) modalCallback(); closeModal(); }
+        document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
         
-        function closeModal() {
-            document.getElementById('modalOverlay').classList.remove('active');
-            modalCallback = null;
-        }
-        
-        function confirmModal() {
-            if (modalCallback) modalCallback();
-            closeModal();
-        }
-        
-        document.getElementById('modalOverlay').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
-        });
-        
-        // ============ TOAST SYSTEM ============
         function showToast(message, type = 'info', duration = 3000) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
+            toast.className = 'toast toast-' + type;
             const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
             toast.innerHTML = '<span>' + (icons[type] || 'ℹ️') + '</span><span>' + message + '</span>';
             container.appendChild(toast);
-            
             setTimeout(() => {
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateX(40px) scale(0.9)';
@@ -534,18 +485,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
             }, duration);
         }
         
-        // ============ TASK MANAGEMENT ============
         async function addTask() {
             const title = document.getElementById('taskTitle').value.trim();
             const description = document.getElementById('taskDescription').value.trim();
             const priority = document.getElementById('taskPriority').value;
-            
-            if (!title) {
-                showToast('Please enter a task title', 'warning');
-                document.getElementById('taskTitle').focus();
-                return;
-            }
-            
+            if (!title) { showToast('Please enter a task title', 'warning'); return; }
             try {
                 const response = await fetch('/api/add_task', {
                     method: 'POST',
@@ -558,113 +502,58 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
                     refreshTasks();
                     showToast('Task "' + title + '" added', 'success');
                 }
-            } catch (error) {
-                showToast('Failed to add task', 'error');
-            }
+            } catch (error) { showToast('Failed to add task', 'error'); }
         }
         
         async function toggleTask(id) {
-            try {
-                await fetch('/api/toggle_task/' + id, { method: 'POST' });
-                refreshTasks();
-            } catch (error) {
-                showToast('Failed to update task', 'error');
-            }
+            try { await fetch('/api/toggle_task/' + id, { method: 'POST' }); refreshTasks(); } 
+            catch (error) { showToast('Failed to update task', 'error'); }
         }
         
         async function deleteTask(id, title) {
-            showModal(
-                '🗑️',
-                'Delete Task',
-                'Delete "' + (title || 'this task') + '"? This cannot be undone.',
-                'Delete',
-                'danger',
-                async function() {
-                    try {
-                        await fetch('/api/delete_task/' + id, { method: 'DELETE' });
-                        refreshTasks();
-                        showToast('Task deleted', 'success');
-                    } catch (error) {
-                        showToast('Failed to delete task', 'error');
-                    }
-                }
-            );
+            showModal('🗑️', 'Delete Task', 'Delete "' + (title || 'this task') + '"?', 'Delete', 'danger', async function() {
+                try { await fetch('/api/delete_task/' + id, { method: 'DELETE' }); refreshTasks(); showToast('Task deleted', 'success'); } 
+                catch (error) { showToast('Failed to delete task', 'error'); }
+            });
         }
         
         async function clearCompleted() {
             const stats = await fetch('/api/stats').then(r => r.json());
-            if (stats.completed === 0) {
-                showToast('No completed tasks to clear', 'info');
-                return;
-            }
-            
-            showModal(
-                '🧹',
-                'Clear Completed',
-                'Delete ' + stats.completed + ' completed task(s)?',
-                'Clear All',
-                'danger',
-                async function() {
-                    try {
-                        await fetch('/api/clear_completed', { method: 'POST' });
-                        refreshTasks();
-                        showToast('Cleared ' + stats.completed + ' tasks', 'success');
-                    } catch (error) {
-                        showToast('Failed to clear tasks', 'error');
-                    }
-                }
-            );
+            if (stats.completed === 0) { showToast('No completed tasks to clear', 'info'); return; }
+            showModal('🧹', 'Clear Completed', 'Delete ' + stats.completed + ' completed task(s)?', 'Clear All', 'danger', async function() {
+                try { await fetch('/api/clear_completed', { method: 'POST' }); refreshTasks(); showToast('Cleared ' + stats.completed + ' tasks', 'success'); } 
+                catch (error) { showToast('Failed to clear tasks', 'error'); }
+            });
         }
         
         async function refreshTasks() {
             try {
-                const [tasksRes, statsRes] = await Promise.all([
-                    fetch('/api/tasks'),
-                    fetch('/api/stats')
-                ]);
+                const [tasksRes, statsRes] = await Promise.all([fetch('/api/tasks'), fetch('/api/stats')]);
                 const tasks = await tasksRes.json();
                 const stats = await statsRes.json();
                 renderTasks(tasks);
                 updateStats(stats);
-            } catch (error) {
-                console.error('Error:', error);
-            }
+            } catch (error) { console.error('Error:', error); }
         }
         
         function renderTasks(tasks) {
             const list = document.getElementById('taskList');
-            
             if (!tasks || tasks.length === 0) {
-                list.innerHTML = `
-                    <div class="empty-state">
-                        <span class="icon">✨</span>
-                        <h3>No tasks yet</h3>
-                        <p>Start by adding your first task above</p>
-                    </div>
-                `;
+                list.innerHTML = '<div class="empty-state"><span class="icon">✨</span><h3>No tasks yet</h3><p>Start by adding your first task above</p></div>';
                 return;
             }
-            
-            list.innerHTML = tasks.map(task => `
-                <div class="task-item flex items-center gap-3 py-3 border-b border-slate-100 last:border-0">
-                    <input type="checkbox" 
-                           class="task-checkbox" 
-                           ${task.completed ? 'checked' : ''} 
-                           onchange="toggleTask(${task.id})" />
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}">
-                            ${escapeHtml(task.title)}
-                        </p>
-                        ${task.description ? '<p class="text-xs text-slate-400 truncate">' + escapeHtml(task.description) + '</p>' : ''}
-                    </div>
-                    <span class="priority-badge priority-${task.priority}">${task.priority}</span>
-                    <span class="text-xs text-slate-400 whitespace-nowrap">${formatDate(task.created_at)}</span>
-                    <button onclick="deleteTask(${task.id}, '${escapeHtml(task.title)}')" 
-                            class="text-slate-400 hover:text-red-500 transition text-sm p-1">
-                        ✕
-                    </button>
-                </div>
-            `).join('');
+            list.innerHTML = tasks.map(task => 
+                '<div class="task-item flex items-center gap-3 py-3 border-b border-slate-100 last:border-0">' +
+                    '<input type="checkbox" class="task-checkbox" ' + (task.completed ? 'checked' : '') + ' onchange="toggleTask(' + task.id + ')" />' +
+                    '<div class="flex-1 min-w-0">' +
+                        '<p class="text-sm ' + (task.completed ? 'line-through text-slate-400' : 'text-slate-700') + '">' + escapeHtml(task.title) + '</p>' +
+                        (task.description ? '<p class="text-xs text-slate-400 truncate">' + escapeHtml(task.description) + '</p>' : '') +
+                    '</div>' +
+                    '<span class="priority-badge priority-' + task.priority + '">' + task.priority + '</span>' +
+                    '<span class="text-xs text-slate-400 whitespace-nowrap">' + formatDate(task.created_at) + '</span>' +
+                    '<button onclick="deleteTask(' + task.id + ', \'' + escapeHtml(task.title) + '\')" class="text-slate-400 hover:text-red-500 transition text-sm p-1">✕</button>' +
+                '</div>'
+            ).join('');
         }
         
         function updateStats(stats) {
@@ -688,9 +577,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
                 if (diff < 60) return diff + 'm';
                 if (diff < 1440) return Math.floor(diff / 60) + 'h';
                 return date.toLocaleDateString();
-            } catch {
-                return '';
-            }
+            } catch { return ''; }
         }
         
         async function exportData() {
@@ -706,22 +593,16 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
                 a.click();
                 URL.revokeObjectURL(url);
                 showToast('Data exported', 'success');
-            } catch (error) {
-                showToast('Failed to export', 'error');
-            }
+            } catch (error) { showToast('Failed to export', 'error'); }
         }
         
-        // ============ INIT ============
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('taskTitle').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') addTask();
-            });
+            document.getElementById('taskTitle').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
             refreshTasks();
             setInterval(refreshTasks, 30000);
             setTimeout(() => showToast('🚀 Welcome!', 'info'), 600);
         });
         
-        // ============ GLOBAL ============
         window.minimizeWindow = minimizeWindow;
         window.maximizeWindow = maximizeWindow;
         window.closeWindow = closeWindow;
@@ -816,10 +697,8 @@ func exportHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Load tasks
 	loadTasks()
 
-	// Setup routes
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/api/tasks", tasksHandler)
 	http.HandleFunc("/api/stats", statsHandler)
@@ -829,22 +708,18 @@ func main() {
 	http.HandleFunc("/api/clear_completed", clearCompletedHandler)
 	http.HandleFunc("/api/export", exportHandler)
 
-	// Start server in background
 	go func() {
 		fmt.Println("Starting server on http://localhost:8080")
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
 
-	// Create webview window
 	w := webview.NewWindow(webview.Settings{
 		Title:     "Go Desktop App",
 		Width:     900,
 		Height:    700,
 		Resizable: true,
-		Debug:     false,
 	})
 
-	// Add webview object to window
 	w.Bind("webview", struct {
 		Minimize func()
 		Maximize func()
@@ -855,7 +730,6 @@ func main() {
 		Terminate: w.Terminate,
 	})
 
-	// Set URL
 	w.Navigate("http://localhost:8080")
 	w.Run()
 }
