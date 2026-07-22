@@ -16,18 +16,20 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    # 1. Install Go FIRST so it gets added to the Windows PATH
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+        
+    # 2. Install MSYS2 SECOND so it inherits the PATH containing Go
     - name: Install MSYS2 & GCC
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
         update: true
         install: mingw-w64-x86_64-gcc
-        path-type: inherit # This allows MSYS2 to see the Go installation from Windows PATH
-        
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21'
+        path-type: inherit
         
     - name: Download dependencies
       shell: msys2 {0}
