@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/webview/webview"
@@ -37,7 +37,7 @@ var dataFile = "tasks_data.json"
 
 // ============ FILE OPERATIONS ============
 func loadTasks() {
-	data, err := ioutil.ReadFile(dataFile)
+	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		taskManager.Tasks = []Task{}
 		return
@@ -54,7 +54,7 @@ func saveTasks() {
 		log.Println("Error saving tasks:", err)
 		return
 	}
-	err = ioutil.WriteFile(dataFile, data, 0644)
+	err = os.WriteFile(dataFile, data, 0644)
 	if err != nil {
 		log.Println("Error writing tasks:", err)
 	}
@@ -443,11 +443,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
     <div class="toast-container" id="toastContainer"></div>
     
     <script>
-        function minimizeWindow() { if (window.webview) window.webview.Minimize(); }
-        function maximizeWindow() { if (window.webview) window.webview.Maximize(); }
+        function minimizeWindow() { if (window.minimizeApp) window.minimizeApp(); }
+        function maximizeWindow() { if (window.maximizeApp) window.maximizeApp(); }
         function closeWindow() {
             showModal('👋', 'Exit Application', 'Are you sure you want to close?', 'Yes, Close', 'danger',
-                function() { if (window.webview) window.webview.Terminate(); }
+                function() { if (window.terminateApp) window.terminateApp(); }
             );
         }
         
@@ -712,21 +712,18 @@ func main() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
 
-	w := webview.NewWindow(webview.Settings{
-		Title:     "Go Desktop App",
-		Width:     900,
-		Height:    700,
-		Resizable: true,
-	})
+	w := webview.New(false)
+	defer w.Destroy()
 
-	w.Bind("webview", struct {
-		Minimize func()
-		Maximize func()
-		Terminate func()
-	}{
-		Minimize: w.Minimize,
-		Maximize: w.Maximize,
-		Terminate: w.Terminate,
+	w.SetTitle("Go Desktop App")
+	w.SetSize(900, 700, webview.HintNone)
+
+	// Webview does not natively support Minimize and Maximize endpoints out of the box,
+	// so dummy functions prevent JavaScript errors while Terminate runs correctly.
+	w.Bind("minimizeApp", func() {})
+	w.Bind("maximizeApp", func() {})
+	w.Bind("terminateApp", func() {
+		w.Terminate()
 	})
 
 	w.Navigate("http://localhost:8080")
