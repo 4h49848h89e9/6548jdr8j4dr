@@ -1,4 +1,4 @@
-name: Build Go Desktop App
+name: Build Windows EXE
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -20,71 +21,28 @@ jobs:
       with:
         go-version: '1.21'
     
-    - name: Install dependencies
+    - name: Download dependencies
       run: |
         go mod download
-        go get github.com/webview/webview@v0.0.0-20230901174643-ee25b0543e29
+        go get github.com/webview/webview@v0.0.0-20231011074434-fafb2d1874b2
     
-    - name: Build for Windows
+    - name: Build EXE
       run: |
         go build -ldflags="-H windowsgui" -o GoDesktopApp.exe main.go
     
-    - name: Upload build artifact
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: GoDesktopApp-Windows
         path: GoDesktopApp.exe
-
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
     
-    - name: Set up Go
-      uses: actions/setup-go@v5
+    - name: Upload to release
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        go-version: '1.21'
-    
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
-        go mod download
-        go get github.com/webview/webview@v0.0.0-20230901174643-ee25b0543e29
-    
-    - name: Build for Linux
-      run: |
-        go build -o GoDesktopApp main.go
-    
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: GoDesktopApp-Linux
-        path: GoDesktopApp
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.21'
-    
-    - name: Install dependencies
-      run: |
-        go mod download
-        go get github.com/webview/webview@v0.0.0-20230901174643-ee25b0543e29
-    
-    - name: Build for macOS
-      run: |
-        go build -o GoDesktopApp main.go
-    
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: GoDesktopApp-macOS
-        path: GoDesktopApp
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: GoDesktopApp.exe
+        asset_name: GoDesktopApp.exe
+        asset_content_type: application/octet-stream
