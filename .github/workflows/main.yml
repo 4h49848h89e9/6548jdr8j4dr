@@ -11,17 +11,17 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     # 1. Install Go FIRST so it gets added to the Windows PATH
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.21'
-        
+
     # 2. Install MSYS2 SECOND so it inherits the PATH containing Go
     - name: Install MSYS2 & GCC
       uses: msys2/setup-msys2@v2
@@ -30,26 +30,26 @@ jobs:
         update: true
         install: mingw-w64-x86_64-gcc
         path-type: inherit
-        
+
     - name: Download dependencies
       shell: msys2 {0}
       run: |
+        go mod tidy
         go mod download
-        go get github.com/webview/webview@v0.0.0-20231011074434-fafb2d1874b2
-        
+
     - name: Build EXE
       shell: msys2 {0}
       env:
         CGO_ENABLED: 1
       run: |
         go build -ldflags="-H windowsgui" -o GoDesktopApp.exe main.go
-        
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: GoDesktopApp-Windows
         path: GoDesktopApp.exe
-        
+
     - name: Upload to release
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@v2
